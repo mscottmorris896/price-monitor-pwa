@@ -19,11 +19,6 @@ exports.handler = async (event) => {
     if (!imageBase64 || !imageMimeType) {
       return jsonResponse(400, {
         error: "Не передано изображение.",
-        debug: {
-          hasImageBase64: Boolean(imageBase64),
-          hasImageMimeType: Boolean(imageMimeType),
-          bodyKeys: Object.keys(body || {})
-        }
       });
     }
 
@@ -31,7 +26,7 @@ exports.handler = async (event) => {
       "image/jpeg",
       "image/png",
       "image/webp",
-      "image/gif"
+      "image/gif",
     ]);
 
     if (!allowedTypes.has(imageMimeType)) {
@@ -45,7 +40,7 @@ exports.handler = async (event) => {
       headers: {
         "content-type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
@@ -60,18 +55,18 @@ exports.handler = async (event) => {
                 source: {
                   type: "base64",
                   media_type: imageMimeType,
-                  data: imageBase64
-                }
+                  data: imageBase64,
+                },
               },
               {
                 type: "text",
                 text:
-                  "Определи товар на фото. Ответь только одной строкой без пояснений: бренд, модель, ключевая характеристика для поиска. Максимум 8 слов."
-              }
-            ]
-          }
-        ]
-      })
+                  "Определи товар на фото. Ответь только одной строкой без пояснений: бренд, модель, ключевая характеристика для поиска. Максимум 8 слов.",
+              },
+            ],
+          },
+        ],
+      }),
     });
 
     const data = await anthropicResponse.json();
@@ -82,7 +77,6 @@ exports.handler = async (event) => {
           data?.error?.message ||
           data?.error?.type ||
           "Ошибка API Anthropic.",
-        raw: data
       });
     }
 
@@ -96,7 +90,6 @@ exports.handler = async (event) => {
     if (!productName) {
       return jsonResponse(502, {
         error: "Claude не вернул название товара.",
-        raw: data
       });
     }
 
@@ -113,7 +106,7 @@ function jsonResponse(statusCode, payload) {
     statusCode,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
+      "Cache-Control": "no-store",
     },
     body: JSON.stringify(payload),
   };
