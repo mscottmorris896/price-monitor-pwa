@@ -1,19 +1,113 @@
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' }, body: '' };
+  if (event.httpMethod !== "POST") {
+    return jsonResponse(405, { error: "Method Not Allowed" });
   }
-  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) return { statusCode: 500, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'API key not configured' }) };
+
   try {
-    const body = JSON.parse(event.body);
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-claude-sonnet-4-6    });
-    const data = await response.json();
-    return { statusCode: response.status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(data) };
-  } catch (err) {
-    return { statusCode: 500, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: err.message }) };
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+
+    if (!apiKey) {
+      return jsonResponse(500, {
+        error: "На сервере не найден ANTHROPIC_API_KEY.",
+      });
+    }
+
+    const body = JSON.parse(event.body || "{}");
+    const imageBase64 = body.imageBase64;
+    const imageMimeType = body.imageMimeType;
+
+    if (!imageBase64 || !imageMimeType) {
+      return jsonResponse(400, {
+        error: "Не передано изображение.",
+      });
+    }
+
+    const allowedTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif"
+    ]);
+
+    if (!allowedTypes.has(imageMimeType)) {
+      return jsonResponse(400, {
+        error: "Неподдерживаемый формат изображения.",
+      });
+    }
+
+    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-latest",
+        max_tokens: 120,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: imageMimeType,
+                  data: imageBase64
+                }
+              },
+              {
+                type: "text",
+                text:
+                  "Определи товар на фото. Ответь только одной строкой без пояснений: бренд, модель, ключевая характеристика для поиска. Максимум 8 слов."
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    const data = await anthropicResponse.json();
+
+    if (!anthropicResponse.ok) {
+      return jsonResponse(anthropicResponse.status, {
+        error:
+          data?.error?.message ||
+          data?.error?.type ||
+          "Ошибка API Anthropic."
+      });
+    }
+
+    const productName =
+      data?.content
+        ?.filter((item) => item.type === "text")
+        ?.map((item) => item.text)
+        ?.join(" ")
+        ?.trim() || "";
+
+    if (!productName) {
+      return jsonResponse(502, {
+        error: "Claude не вернул название товара.",
+      });
+    }
+
+    return jsonResponse(200, { productName });
+  } catch (error) {
+    return jsonResponse(500, {
+      error: error?.message || "Внутренняя ошибка сервера.",
+    });
   }
 };
+
+function jsonResponse(statusCode, payload) {
+  return {
+    statusCode,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    },
+    body: JSON.stringify(payload),
+  };
+}
