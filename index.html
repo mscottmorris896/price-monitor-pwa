@@ -2,10 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -43,6 +40,9 @@
       --danger-bg: rgba(255, 60, 60, 0.08);
       --danger-border: rgba(255, 60, 60, 0.2);
       --danger-text: #ff6b6b;
+      --success-bg: rgba(90, 255, 140, 0.08);
+      --success-border: rgba(90, 255, 140, 0.14);
+      --success-text: #7dff9c;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
@@ -54,6 +54,10 @@
       font-family: "Manrope", sans-serif;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100dvh;
     }
 
     .app {
@@ -113,7 +117,6 @@
       border-radius: 14px;
       padding: 12px 14px;
       margin-bottom: 12px;
-      flex-direction: row;
       align-items: center;
       gap: 10px;
     }
@@ -145,18 +148,22 @@
       margin-top: 1px;
     }
 
+    .install-btn,
+    .secondary-btn {
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     .install-btn {
       background: var(--accent);
       color: #0a0a0a;
-      border: none;
-      border-radius: 9px;
       padding: 7px 12px;
       font-size: 11px;
       font-family: "Unbounded", sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
     }
 
     .upload-zone {
@@ -168,7 +175,6 @@
       overflow: hidden;
       background: var(--surface);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: pointer;
@@ -248,14 +254,33 @@
       transform: translateX(-50%);
       font-size: 11px;
       font-weight: 600;
-      color: rgba(255,255,255,0.8);
-      background: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.56);
       padding: 4px 12px;
       border-radius: 20px;
       white-space: nowrap;
       pointer-events: none;
       display: none;
       z-index: 2;
+    }
+
+    .image-actions {
+      display: none;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .image-actions.visible {
+      display: flex;
+    }
+
+    .secondary-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 11px 12px;
+      font-size: 12px;
+      font-family: "Manrope", sans-serif;
     }
 
     .divider-row {
@@ -361,6 +386,28 @@
       color: var(--muted);
       font-weight: 500;
       text-align: center;
+    }
+
+    .error-msg,
+    .status-msg {
+      display: none;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 10px;
+      line-height: 1.45;
+    }
+
+    .error-msg {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-text);
+    }
+
+    .status-msg {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
     }
 
     .results-section {
@@ -494,18 +541,6 @@
       margin-top: auto;
     }
 
-    .error-msg {
-      display: none;
-      background: var(--danger-bg);
-      border: 1px solid var(--danger-border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 13px;
-      color: var(--danger-text);
-      margin-bottom: 10px;
-      line-height: 1.45;
-    }
-
     .history-section {
       margin-bottom: 12px;
     }
@@ -600,6 +635,10 @@
         <div class="img-change-hint" id="change-hint">Нажмите для замены</div>
       </label>
 
+      <div class="image-actions" id="image-actions">
+        <button class="secondary-btn" id="clear-image-btn" type="button">Удалить фото</button>
+      </div>
+
       <div class="divider-row">
         <div class="divider-line"></div>
         <div class="divider-text">или введите название</div>
@@ -629,6 +668,7 @@
         <div class="loading-text" id="loading-text">Распознаю товар…</div>
       </div>
 
+      <div class="status-msg" id="status-msg"></div>
       <div class="error-msg" id="error-msg"></div>
 
       <div class="results-section" id="results">
@@ -683,6 +723,7 @@
     }
 
     const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+    const HISTORY_KEY = "price_history";
 
     const elements = {
       uploadZone: document.getElementById("upload-zone"),
@@ -691,15 +732,18 @@
       imgOverlay: document.getElementById("img-overlay"),
       uploadPlaceholder: document.getElementById("upload-placeholder"),
       changeHint: document.getElementById("change-hint"),
+      imageActions: document.getElementById("image-actions"),
+      clearImageBtn: document.getElementById("clear-image-btn"),
       productInput: document.getElementById("product-input"),
       findBtn: document.getElementById("find-btn"),
       loading: document.getElementById("loading"),
       loadingText: document.getElementById("loading-text"),
+      statusMsg: document.getElementById("status-msg"),
+      errorMsg: document.getElementById("error-msg"),
       results: document.getElementById("results"),
       detectedName: document.getElementById("detected-name"),
       wbCard: document.getElementById("wb-card"),
       ozCard: document.getElementById("oz-card"),
-      errorMsg: document.getElementById("error-msg"),
       installBanner: document.getElementById("install-banner"),
       installBtn: document.getElementById("install-btn"),
       historySection: document.getElementById("history-section"),
@@ -721,10 +765,46 @@
 
     let loadingInterval = null;
 
+    function sanitizeSearchText(text) {
+      return String(text || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
     function updateButtonState() {
       const hasImage = Boolean(state.imageBase64);
-      const hasManualText = elements.productInput.value.trim().length > 0;
-      elements.findBtn.disabled = state.isLoading || (!hasImage && !hasManualText);
+      const hasText = Boolean(sanitizeSearchText(elements.productInput.value));
+      elements.findBtn.disabled = state.isLoading || (!hasImage && !hasText);
+    }
+
+    function showStatus(message) {
+      elements.statusMsg.textContent = message;
+      elements.statusMsg.style.display = "block";
+    }
+
+    function hideStatus() {
+      elements.statusMsg.textContent = "";
+      elements.statusMsg.style.display = "none";
+    }
+
+    function showError(message) {
+      elements.errorMsg.textContent = message;
+      elements.errorMsg.style.display = "block";
+    }
+
+    function hideError() {
+      elements.errorMsg.textContent = "";
+      elements.errorMsg.style.display = "none";
+    }
+
+    function hideResults() {
+      elements.results.style.display = "none";
+    }
+
+    function resetFeedback() {
+      hideError();
+      hideStatus();
+      hideResults();
     }
 
     function showLoading() {
@@ -750,32 +830,6 @@
       updateButtonState();
     }
 
-    function showError(message) {
-      elements.errorMsg.textContent = message;
-      elements.errorMsg.style.display = "block";
-    }
-
-    function hideError() {
-      elements.errorMsg.textContent = "";
-      elements.errorMsg.style.display = "none";
-    }
-
-    function hideResults() {
-      elements.results.style.display = "none";
-    }
-
-    function resetFeedback() {
-      hideError();
-      hideResults();
-    }
-
-    function sanitizeSearchText(text) {
-      return String(text || "")
-        .replace(/\s+/g, " ")
-        .replace(/[^\S\r\n]+/g, " ")
-        .trim();
-    }
-
     function setPreviewImage(dataUrl) {
       elements.previewImg.src = dataUrl;
       elements.previewImg.style.display = "block";
@@ -783,81 +837,74 @@
       elements.changeHint.style.display = "block";
       elements.uploadPlaceholder.style.display = "none";
       elements.uploadZone.classList.add("has-image");
+      elements.imageActions.classList.add("visible");
     }
 
-    function getHistory() {
-      try {
-        const raw = localStorage.getItem("price_history");
-        const parsed = JSON.parse(raw || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
+    function clearImage() {
+      state.imageBase64 = null;
+      state.imageMimeType = null;
+
+      elements.fileInput.value = "";
+      elements.previewImg.src = "";
+      elements.previewImg.style.display = "none";
+      elements.imgOverlay.style.display = "none";
+      elements.changeHint.style.display = "none";
+      elements.uploadPlaceholder.style.display = "flex";
+      elements.uploadZone.classList.remove("has-image");
+      elements.imageActions.classList.remove("visible");
+
+      updateButtonState();
     }
 
-    function saveHistory(name) {
-      const normalized = sanitizeSearchText(name);
-      if (!normalized) return;
-
-      const history = getHistory().filter((item) => item.name !== normalized);
-      history.unshift({
-        name: normalized,
-        time: Date.now(),
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
+        reader.readAsDataURL(file);
       });
-
-      localStorage.setItem("price_history", JSON.stringify(history.slice(0, 8)));
-      renderHistory();
     }
 
-    function getTimeAgo(timestamp) {
-      const minutes = Math.floor((Date.now() - timestamp) / 60000);
+    async function handleFileChange(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-      if (minutes < 1) return "только что";
-      if (minutes < 60) return `${minutes} мин`;
+      resetFeedback();
 
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `${hours} ч`;
-
-      const days = Math.floor(hours / 24);
-      return `${days} д`;
-    }
-
-    function renderHistory() {
-      const history = getHistory();
-
-      if (!history.length) {
-        elements.historySection.style.display = "none";
-        elements.historyList.innerHTML = "";
+      if (!file.type || !file.type.startsWith("image/")) {
+        showError("Пожалуйста, выберите изображение.");
+        clearImage();
         return;
       }
 
-      elements.historySection.style.display = "block";
-      elements.historyList.innerHTML = "";
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        showError("Файл слишком большой. Загрузите изображение до 5 МБ.");
+        clearImage();
+        return;
+      }
 
-      history.forEach((item) => {
-        const el = document.createElement("div");
-        el.className = "history-item";
-        el.innerHTML = `
-          <div class="history-dot"></div>
-          <div class="history-name"></div>
-          <div class="history-time">${getTimeAgo(item.time)}</div>
-        `;
-        el.querySelector(".history-name").textContent = item.name;
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        const parts = String(dataUrl).split(",");
 
-        el.addEventListener("click", () => {
-          elements.productInput.value = item.name;
-          resetFeedback();
-          updateButtonState();
-          runSearch();
-        });
+        if (parts.length < 2 || !parts[1]) {
+          throw new Error("Некорректный формат изображения.");
+        }
 
-        elements.historyList.appendChild(el);
-      });
+        state.imageBase64 = parts[1];
+        state.imageMimeType = file.type || "image/jpeg";
+
+        setPreviewImage(dataUrl);
+        showStatus("Фото загружено. Можно искать.");
+        updateButtonState();
+      } catch (error) {
+        clearImage();
+        showError(error.message || "Не удалось загрузить изображение.");
+      }
     }
 
     function buildMarketplaceLinks(productName) {
       const query = encodeURIComponent(productName);
-
       return {
         wildberries: `https://www.wildberries.ru/catalog/0/search.aspx?search=${query}`,
         ozon: `https://www.ozon.ru/search/?text=${query}`,
@@ -877,54 +924,11 @@
       elements.results.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function handleFileChange(event) {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      resetFeedback();
-
-      if (!file.type.startsWith("image/")) {
-        showError("Пожалуйста, выберите изображение.");
-        return;
-      }
-
-      if (file.size > MAX_IMAGE_SIZE_BYTES) {
-        showError("Файл слишком большой. Загрузите изображение до 5 МБ.");
-        return;
-      }
-
-      try {
-        const dataUrl = await readFileAsDataURL(file);
-        const [meta, base64] = String(dataUrl).split(",");
-
-        if (!meta || !base64) {
-          throw new Error("Некорректный формат изображения.");
-        }
-
-        state.imageBase64 = base64;
-        state.imageMimeType = file.type || "image/jpeg";
-
-        setPreviewImage(dataUrl);
-        updateButtonState();
-      } catch (error) {
-        state.imageBase64 = null;
-        state.imageMimeType = null;
-        updateButtonState();
-        showError(error.message || "Не удалось загрузить изображение.");
-      }
-    }
-
     async function detectProductFromImage() {
+      if (!state.imageBase64 || !state.imageMimeType) {
+        throw new Error("Сначала загрузите изображение.");
+      }
+
       const response = await fetch("/.netlify/functions/claude-proxy", {
         method: "POST",
         headers: {
@@ -937,7 +941,6 @@
       });
 
       let payload = null;
-
       try {
         payload = await response.json();
       } catch {
@@ -945,11 +948,11 @@
       }
 
       if (!response.ok) {
-        const errorMessage =
+        const message =
           payload?.error ||
           payload?.message ||
           "Ошибка распознавания изображения.";
-        throw new Error(errorMessage);
+        throw new Error(message);
       }
 
       const detectedName = sanitizeSearchText(
@@ -995,6 +998,77 @@
       }
     }
 
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY);
+        const parsed = JSON.parse(raw || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function getTimeAgo(timestamp) {
+      const minutes = Math.floor((Date.now() - timestamp) / 60000);
+
+      if (minutes < 1) return "только что";
+      if (minutes < 60) return `${minutes} мин`;
+
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} ч`;
+
+      const days = Math.floor(hours / 24);
+      return `${days} д`;
+    }
+
+    function renderHistory() {
+      const history = getHistory();
+
+      if (!history.length) {
+        elements.historySection.style.display = "none";
+        elements.historyList.innerHTML = "";
+        return;
+      }
+
+      elements.historySection.style.display = "block";
+      elements.historyList.innerHTML = "";
+
+      history.forEach((item) => {
+        const el = document.createElement("div");
+        el.className = "history-item";
+        el.innerHTML = `
+          <div class="history-dot"></div>
+          <div class="history-name"></div>
+          <div class="history-time">${getTimeAgo(item.time)}</div>
+        `;
+
+        el.querySelector(".history-name").textContent = item.name;
+
+        el.addEventListener("click", () => {
+          elements.productInput.value = item.name;
+          resetFeedback();
+          updateButtonState();
+          runSearch();
+        });
+
+        elements.historyList.appendChild(el);
+      });
+    }
+
+    function saveHistory(name) {
+      const normalized = sanitizeSearchText(name);
+      if (!normalized) return;
+
+      const history = getHistory().filter((item) => item.name !== normalized);
+      history.unshift({
+        name: normalized,
+        time: Date.now(),
+      });
+
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 8)));
+      renderHistory();
+    }
+
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       state.deferredPrompt = event;
@@ -1016,6 +1090,11 @@
     });
 
     elements.fileInput.addEventListener("change", handleFileChange);
+
+    elements.clearImageBtn.addEventListener("click", () => {
+      resetFeedback();
+      clearImage();
+    });
 
     elements.productInput.addEventListener("input", () => {
       resetFeedback();
