@@ -43,31 +43,30 @@ exports.handler = async (event) => {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-latest",
-        max_tokens: 120,
-        temperature: 0,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: imageMimeType,
-                  data: imageBase64
-                }
-              },
-              {
-                type: "text",
-                text:
-                  "Определи товар на фото. Ответь только одной строкой без пояснений: бренд, модель, ключевая характеристика для поиска. Максимум 8 слов."
-              }
-            ]
+  model: "claude-sonnet-4-6",
+  max_tokens: 120,
+  temperature: 0,
+  messages: [
+    {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: imageMimeType,
+            data: imageBase64
           }
-        ]
-      })
-    });
+        },
+        {
+          type: "text",
+          text:
+            "Определи товар на фото. Ответь только одной строкой без пояснений: бренд, модель, ключевая характеристика для поиска. Максимум 8 слов."
+        }
+      ]
+    }
+  ]
+})
 
     const data = await anthropicResponse.json();
 
