@@ -1,190 +1,1038 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ЦеноМонитор">
-<title>ЦеноМонитор</title>
-<link rel="manifest" href="manifest.json">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e;
-    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
-    --text: #f0f0f0; --muted: #888; --subtle: #555;
-    --wb: #9951E0; --wb-light: #c48ef5; --oz: #005BFF; --oz-light: #5b9eff;
-    --accent: #e8ff5a;
-    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Manrope', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  .app { min-height: 100dvh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; padding-bottom: calc(16px + var(--safe-bottom)); }
-  .header { padding: calc(12px + var(--safe-top)) 16px 10px; display: flex; align-items: center; justify-content: space-between; }
-  .logo { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-  .logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-  .version-badge { font-size: 10px; font-weight: 600; background: var(--surface2); color: var(--muted); padding: 3px 8px; border-radius: 20px; border: 1px solid var(--border); }
-  .scroll-area { flex: 1; overflow-y: auto; padding: 0 14px; -webkit-overflow-scrolling: touch; }
-  .install-banner { display: none; background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; flex-direction: row; align-items: center; gap: 10px; }
-  .install-icon { width: 36px; height: 36px; flex-shrink: 0; background: var(--surface2); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .install-text { flex: 1; }
-  .install-title { font-size: 13px; font-weight: 600; }
-  .install-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .install-btn { background: var(--accent); color: #0a0a0a; border: none; border-radius: 9px; padding: 7px 12px; font-size: 11px; font-family: 'Unbounded', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  .upload-zone { position: relative; width: 100%; height: 200px; border: 1.5px dashed var(--border2); border-radius: 18px; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 12px; -webkit-tap-highlight-color: transparent; }
-  .upload-zone.has-image { border-style: solid; }
-  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
-  #preview-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; border-radius: 16px; }
-  .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; z-index: 1; }
-  .cam-icon { width: 48px; height: 48px; background: var(--surface2); border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); }
-  .upload-label { font-size: 14px; font-weight: 600; }
-  .upload-sub { font-size: 12px; color: var(--muted); }
-  .img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%); display: none; border-radius: 16px; pointer-events: none; }
-  .img-change-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 20px; white-space: nowrap; pointer-events: none; display: none; }
-  .divider-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .divider-line { flex: 1; height: 1px; background: var(--border); }
-  .divider-text { font-size: 11px; color: var(--subtle); font-weight: 600; letter-spacing: 0.5px; }
-  .text-input { width: 100%; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 12px; padding: 13px 14px; font-size: 15px; font-family: 'Manrope', sans-serif; color: var(--text); outline: none; -webkit-appearance: none; margin-bottom: 12px; }
-  .text-input::placeholder { color: var(--subtle); }
-  .text-input:focus { border-color: rgba(255,255,255,0.3); }
-  .cta-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; -webkit-tap-highlight-color: transparent; }
-  .cta-btn:not(:disabled) { background: var(--accent); color: #0a0a0a; }
-  .cta-btn:disabled { background: var(--surface2); color: var(--subtle); cursor: not-allowed; }
-  .cta-btn:not(:disabled):active { transform: scale(0.98); }
-  .loading-state { display: none; flex-direction: column; align-items: center; padding: 24px 0; gap: 12px; }
-  .loading-ring { width: 40px; height: 40px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 13px; color: var(--muted); font-weight: 500; }
-  .results-section { display: none; margin-bottom: 12px; }
-  .detected-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
-  .detected-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
-  .detected-name { font-size: 15px; font-weight: 600; line-height: 1.4; }
-  .platforms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .platform-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 12px; text-decoration: none; display: flex; flex-direction: column; gap: 8px; cursor: pointer; position: relative; overflow: hidden; -webkit-tap-highlight-color: transparent; }
-  .platform-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-  .platform-card.wb::before { background: var(--wb); }
-  .platform-card.oz::before { background: var(--oz); }
-  .platform-card:active { transform: scale(0.97); background: var(--surface2); }
-  .platform-logo-wrap { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 700; }
-  .wb .platform-logo-wrap { background: rgba(153,81,224,0.15); color: var(--wb-light); }
-  .oz .platform-logo-wrap { background: rgba(0,91,255,0.15); color: var(--oz-light); }
-  .platform-card-name { font-size: 13px; font-weight: 600; }
-  .platform-card-sub { font-size: 11px; color: var(--muted); }
-  .open-tag { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; padding: 3px 7px; border-radius: 5px; }
-  .wb .open-tag { background: rgba(153,81,224,0.15); color: var(--wb-light); }
-  .oz .open-tag { background: rgba(0,91,255,0.15); color: var(--oz-light); }
-  .platform-open-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
-  .error-msg { display: none; background: rgba(255,60,60,0.08); border: 1px solid rgba(255,60,60,0.2); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #ff6b6b; margin-bottom: 10px; }
-  .history-section { margin-bottom: 12px; }
-  .section-title { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
-  .history-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .history-item:active { background: var(--surface2); }
-  .history-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--subtle); flex-shrink: 0; }
-  .history-name { font-size: 13px; font-weight: 500; flex: 1; }
-  .history-time { font-size: 11px; color: var(--subtle); }
-</style>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ЦеноМонитор" />
+  <title>ЦеноМонитор</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface2: #1e1e1e;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --muted: #888;
+      --subtle: #555;
+      --wb: #9951E0;
+      --wb-light: #c48ef5;
+      --oz: #005BFF;
+      --oz-light: #5b9eff;
+      --accent: #e8ff5a;
+      --danger-bg: rgba(255, 60, 60, 0.08);
+      --danger-border: rgba(255, 60, 60, 0.2);
+      --danger-text: #ff6b6b;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Manrope", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: calc(16px + var(--safe-bottom));
+    }
+
+    .header {
+      padding: calc(12px + var(--safe-top)) 16px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: "Unbounded", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+    }
+
+    .version-badge {
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--surface2);
+      color: var(--muted);
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .install-banner {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .install-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      background: var(--surface2);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .install-text {
+      flex: 1;
+    }
+
+    .install-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .install-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .install-btn {
+      background: var(--accent);
+      color: #0a0a0a;
+      border: none;
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-size: 11px;
+      font-family: "Unbounded", sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .upload-zone {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      border: 1.5px dashed var(--border2);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 12px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .upload-zone.has-image {
+      border-style: solid;
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      font-size: 0;
+    }
+
+    #preview-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      border-radius: 16px;
+    }
+
+    .upload-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 1;
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    .cam-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--surface2);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border2);
+    }
+
+    .upload-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .upload-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+      display: none;
+      border-radius: 16px;
+      pointer-events: none;
+    }
+
+    .img-change-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+      background: rgba(0,0,0,0.5);
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      pointer-events: none;
+      display: none;
+      z-index: 2;
+    }
+
+    .divider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider-text {
+      font-size: 11px;
+      color: var(--subtle);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .text-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border2);
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      outline: none;
+      -webkit-appearance: none;
+      margin-bottom: 12px;
+    }
+
+    .text-input::placeholder {
+      color: var(--subtle);
+    }
+
+    .text-input:focus {
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    .cta-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      font-family: "Unbounded", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.12s ease;
+    }
+
+    .cta-btn:not(:disabled) {
+      background: var(--accent);
+      color: #0a0a0a;
+    }
+
+    .cta-btn:disabled {
+      background: var(--surface2);
+      color: var(--subtle);
+      cursor: not-allowed;
+    }
+
+    .cta-btn:not(:disabled):active {
+      transform: scale(0.98);
+    }
+
+    .loading-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 0;
+      gap: 12px;
+    }
+
+    .loading-ring {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .results-section {
+      display: none;
+      margin-bottom: 12px;
+    }
+
+    .detected-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    .detected-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .detected-name {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .platforms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .platform-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      color: var(--text);
+    }
+
+    .platform-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .platform-card.wb::before {
+      background: var(--wb);
+    }
+
+    .platform-card.oz::before {
+      background: var(--oz);
+    }
+
+    .platform-card:active {
+      transform: scale(0.97);
+      background: var(--surface2);
+    }
+
+    .platform-logo-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Unbounded", sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .wb .platform-logo-wrap {
+      background: rgba(153,81,224,0.15);
+      color: var(--wb-light);
+    }
+
+    .oz .platform-logo-wrap {
+      background: rgba(0,91,255,0.15);
+      color: var(--oz-light);
+    }
+
+    .platform-card-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .platform-card-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .open-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 5px;
+    }
+
+    .wb .open-tag {
+      background: rgba(153,81,224,0.15);
+      color: var(--wb-light);
+    }
+
+    .oz .open-tag {
+      background: rgba(0,91,255,0.15);
+      color: var(--oz-light);
+    }
+
+    .platform-open-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+
+    .error-msg {
+      display: none;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--danger-text);
+      margin-bottom: 10px;
+      line-height: 1.45;
+    }
+
+    .history-section {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .history-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .history-item:active {
+      background: var(--surface2);
+    }
+
+    .history-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--subtle);
+      flex-shrink: 0;
+    }
+
+    .history-name {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .history-time {
+      font-size: 11px;
+      color: var(--subtle);
+      flex-shrink: 0;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <header class="header">
-    <div class="logo"><div class="logo-dot"></div>ЦеноМонитор</div>
-    <span class="version-badge">PWA</span>
-  </header>
-  <div class="scroll-area">
-    <div class="install-banner" id="install-banner">
-      <div class="install-icon">📲</div>
-      <div class="install-text">
-        <div class="install-title">Установить на экран</div>
-        <div class="install-sub">Работает как приложение</div>
+  <div class="app">
+    <header class="header">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        ЦеноМонитор
       </div>
-      <button class="install-btn" id="install-btn">Установить</button>
-    </div>
-    <div class="upload-zone" id="upload-zone">
-      <input type="file" id="file-input" accept="image/*" capture="environment">
-      <img id="preview-img" alt="Фото товара">
-      <div class="img-overlay" id="img-overlay"></div>
-      <div class="upload-placeholder" id="upload-placeholder">
-        <div class="cam-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#888">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-          </svg>
+      <span class="version-badge">PWA</span>
+    </header>
+
+    <div class="scroll-area">
+      <div class="install-banner" id="install-banner">
+        <div class="install-icon">📲</div>
+        <div class="install-text">
+          <div class="install-title">Установить на экран</div>
+          <div class="install-sub">Работает как приложение</div>
         </div>
-        <div>
-          <div class="upload-label">Сфотографировать товар</div>
-          <div class="upload-sub">или выбрать из галереи</div>
+        <button class="install-btn" id="install-btn" type="button">Установить</button>
+      </div>
+
+      <label class="upload-zone" id="upload-zone" for="file-input">
+        <input type="file" id="file-input" accept="image/*" capture="environment" />
+        <img id="preview-img" alt="Фото товара" />
+        <div class="img-overlay" id="img-overlay"></div>
+
+        <div class="upload-placeholder" id="upload-placeholder">
+          <div class="cam-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#888">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
+          <div>
+            <div class="upload-label">Сфотографировать товар</div>
+            <div class="upload-sub">или выбрать из галереи</div>
+          </div>
+        </div>
+
+        <div class="img-change-hint" id="change-hint">Нажмите для замены</div>
+      </label>
+
+      <div class="divider-row">
+        <div class="divider-line"></div>
+        <div class="divider-text">или введите название</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <input
+        class="text-input"
+        type="text"
+        id="product-input"
+        placeholder="Например: Samsung Galaxy S24 128GB"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+
+      <button class="cta-btn" id="find-btn" type="button" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        Найти лучшую цену
+      </button>
+
+      <div class="loading-state" id="loading">
+        <div class="loading-ring"></div>
+        <div class="loading-text" id="loading-text">Распознаю товар…</div>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <div class="results-section" id="results">
+        <div class="detected-card">
+          <div class="detected-label">Найденный товар</div>
+          <div class="detected-name" id="detected-name"></div>
+        </div>
+
+        <div class="platforms-grid">
+          <a class="platform-card wb" id="wb-card" target="_blank" rel="noopener noreferrer">
+            <div class="platform-logo-wrap">WB</div>
+            <div>
+              <div class="platform-card-name">Wildberries</div>
+              <div class="platform-card-sub">Поиск товара</div>
+            </div>
+            <div class="platform-open-row">
+              <span class="open-tag">Открыть</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--wb-light)">
+                <line x1="7" y1="17" x2="17" y2="7"></line>
+                <polyline points="7 7 17 7 17 17"></polyline>
+              </svg>
+            </div>
+          </a>
+
+          <a class="platform-card oz" id="oz-card" target="_blank" rel="noopener noreferrer">
+            <div class="platform-logo-wrap">OZ</div>
+            <div>
+              <div class="platform-card-name">Ozon</div>
+              <div class="platform-card-sub">Поиск товара</div>
+            </div>
+            <div class="platform-open-row">
+              <span class="open-tag">Открыть</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--oz-light)">
+                <line x1="7" y1="17" x2="17" y2="7"></line>
+                <polyline points="7 7 17 7 17 17"></polyline>
+              </svg>
+            </div>
+          </a>
         </div>
       </div>
-      <div class="img-change-hint" id="change-hint">Нажмите для замены</div>
-    </div>
-    <div class="divider-row">
-      <div class="divider-line"></div>
-      <div class="divider-text">или введите название</div>
-      <div class="divider-line"></div>
-    </div>
-    <input class="text-input" type="text" id="product-input" placeholder="Например: Samsung Galaxy S24 128GB" autocomplete="off" autocorrect="off" spellcheck="false">
-    <button class="cta-btn" id="find-btn" disabled>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Найти лучшую цену
-    </button>
-    <div class="loading-state" id="loading">
-      <div class="loading-ring"></div>
-      <div class="loading-text" id="loading-text">Claude распознаёт товар…</div>
-    </div>
-    <div class="error-msg" id="error-msg"></div>
-    <div class="results-section" id="results">
-      <div class="detected-card">
-        <div class="detected-label">Найденный товар</div>
-        <div class="detected-name" id="detected-name"></div>
+
+      <div class="history-section" id="history-section" style="display:none;">
+        <div class="section-title">Недавние поиски</div>
+        <div id="history-list"></div>
       </div>
-      <div class="platforms-grid">
-        <a class="platform-card wb" id="wb-card" target="_blank" rel="noopener">
-          <div class="platform-logo-wrap">WB</div>
-          <div><div class="platform-card-name">Wildberries</div><div class="platform-card-sub">Цена по возрастанию</div></div>
-          <div class="platform-open-row">
-            <span class="open-tag">Открыть</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--wb-light)"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </div>
-        </a>
-        <a class="platform-card oz" id="oz-card" target="_blank" rel="noopener">
-          <div class="platform-logo-wrap">OZ</div>
-          <div><div class="platform-card-name">Ozon</div><div class="platform-card-sub">Цена по возрастанию</div></div>
-          <div class="platform-open-row">
-            <span class="open-tag">Открыть</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--oz-light)"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </div>
-        </a>
-      </div>
-    </div>
-    <div class="history-section" id="history-section" style="display:none">
-      <div class="section-title">Недавние поиски</div>
-      <div id="history-list"></div>
     </div>
   </div>
-</div>
-<script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-const fileInput=document.getElementById('file-input'),previewImg=document.getElementById('preview-img'),imgOverlay=document.getElementById('img-overlay'),uploadPlaceholder=document.getElementById('upload-placeholder'),changeHint=document.getElementById('change-hint'),productInput=document.getElementById('product-input'),findBtn=document.getElementById('find-btn'),loadingEl=document.getElementById('loading'),loadingText=document.getElementById('loading-text'),resultsEl=document.getElementById('results'),detectedName=document.getElementById('detected-name'),wbCard=document.getElementById('wb-card'),ozCard=document.getElementById('oz-card'),errorMsg=document.getElementById('error-msg'),installBanner=document.getElementById('install-banner'),installBtn=document.getElementById('install-btn'),historySection=document.getElementById('history-section'),historyList=document.getElementById('history-list');
-let imageBase64=null,deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBanner.style.display='flex';});
-installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;if(outcome==='accepted')installBanner.style.display='none';deferredPrompt=null;});
-window.addEventListener('appinstalled',()=>{installBanner.style.display='none';});
-fileInput.addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{const data=ev.target.result;imageBase64=data.split(',')[1];previewImg.src=data;previewImg.style.display='block';imgOverlay.style.display='block';changeHint.style.display='block';uploadPlaceholder.style.display='none';document.getElementById('upload-zone').classList.add('has-image');updateBtn();hideResults();};reader.readAsDataURL(file);});
-productInput.addEventListener('input',()=>{updateBtn();hideResults();});
-function updateBtn(){findBtn.disabled=!imageBase64&&productInput.value.trim().length===0;}
-function hideResults(){resultsEl.style.display='none';errorMsg.style.display='none';}
-function showError(msg){errorMsg.textContent=msg;errorMsg.style.display='block';}
-function loadHistory(){try{return JSON.parse(localStorage.getItem('price_history')||'[]');}catch{return[];}}
-function saveHistory(name){const h=loadHistory().filter(i=>i.name!==name);h.unshift({name,time:Date.now()});localStorage.setItem('price_history',JSON.stringify(h.slice(0,8)));renderHistory();}
-function renderHistory(){const h=loadHistory();if(h.length===0){historySection.style.display='none';return;}historySection.style.display='block';historyList.innerHTML='';h.forEach(item=>{const el=document.createElement('div');el.className='history-item';el.innerHTML='<div class="history-dot"></div><div class="history-name">'+item.name+'</div><div class="history-time">'+getAgo(item.time)+'</div>';el.addEventListener('click',()=>{productInput.value=item.name;updateBtn();doSearch(item.name);});historyList.appendChild(el);});}
-function getAgo(ts){const m=Math.floor((Date.now()-ts)/60000);if(m<1)return'только что';if(m<60)return m+' мин';const h=Math.floor(m/60);if(h<24)return h+' ч';return Math.floor(h/24)+' д';}
-renderHistory();
-findBtn.addEventListener('click',async()=>{const manual=productInput.value.trim();if(!imageBase64&&!manual)return;findBtn.disabled=true;loadingEl.style.display='flex';hideResults();const msgs=['Claude распознаёт товар…','Анализирую фото…','Формирую поиск…'];let mi=0;const ticker=setInterval(()=>{mi=(mi+1)%msgs.length;loadingText.textContent=msgs[mi];},1500);try{await doSearch(manual);}finally{clearInterval(ticker);loadingEl.style.display='none';findBtn.disabled=false;updateBtn();}});
-async function doSearch(manual){loadingEl.style.display='flex';hideResults();let name=manual;if(imageBase64&&!manual){const res=await fetch('/.netlify/functions/claude-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:150,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imageBase64}},{type:'text',text:'Определи товар на фото. Напиши только поисковый запрос: бренд + модель + характеристики. Максимум 8 слов.'}]}]})});if(!res.ok){loadingEl.style.display='none';showError('Ошибка распознавания. Введите название вручную.');return;}const data=await res.json();name=data.content?.[0]?.text?.trim()||'';}
-if(!name){loadingEl.style.display='none';showError('Введите название товара или загрузите фото.');return;}
-const enc=encodeURIComponent(name);wbCard.href='https://www.wildberries.ru/catalog/0/search.aspx?search='+enc+'&sort=priceup';ozCard.href='https://www.ozon.ru/search/?text='+enc+'&sorting=price';detectedName.textContent=name;loadingEl.style.display='none';resultsEl.style.display='block';saveHistory(name);resultsEl.scrollIntoView({behavior:'smooth',block:'nearest'});}
-</script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+
+    const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+    const elements = {
+      uploadZone: document.getElementById("upload-zone"),
+      fileInput: document.getElementById("file-input"),
+      previewImg: document.getElementById("preview-img"),
+      imgOverlay: document.getElementById("img-overlay"),
+      uploadPlaceholder: document.getElementById("upload-placeholder"),
+      changeHint: document.getElementById("change-hint"),
+      productInput: document.getElementById("product-input"),
+      findBtn: document.getElementById("find-btn"),
+      loading: document.getElementById("loading"),
+      loadingText: document.getElementById("loading-text"),
+      results: document.getElementById("results"),
+      detectedName: document.getElementById("detected-name"),
+      wbCard: document.getElementById("wb-card"),
+      ozCard: document.getElementById("oz-card"),
+      errorMsg: document.getElementById("error-msg"),
+      installBanner: document.getElementById("install-banner"),
+      installBtn: document.getElementById("install-btn"),
+      historySection: document.getElementById("history-section"),
+      historyList: document.getElementById("history-list"),
+    };
+
+    const state = {
+      imageBase64: null,
+      imageMimeType: null,
+      deferredPrompt: null,
+      isLoading: false,
+    };
+
+    const loadingMessages = [
+      "Распознаю товар…",
+      "Анализирую фото…",
+      "Формирую поисковый запрос…",
+    ];
+
+    let loadingInterval = null;
+
+    function updateButtonState() {
+      const hasImage = Boolean(state.imageBase64);
+      const hasManualText = elements.productInput.value.trim().length > 0;
+      elements.findBtn.disabled = state.isLoading || (!hasImage && !hasManualText);
+    }
+
+    function showLoading() {
+      state.isLoading = true;
+      elements.loading.style.display = "flex";
+      updateButtonState();
+
+      let index = 0;
+      elements.loadingText.textContent = loadingMessages[index];
+
+      clearInterval(loadingInterval);
+      loadingInterval = setInterval(() => {
+        index = (index + 1) % loadingMessages.length;
+        elements.loadingText.textContent = loadingMessages[index];
+      }, 1500);
+    }
+
+    function hideLoading() {
+      state.isLoading = false;
+      elements.loading.style.display = "none";
+      clearInterval(loadingInterval);
+      loadingInterval = null;
+      updateButtonState();
+    }
+
+    function showError(message) {
+      elements.errorMsg.textContent = message;
+      elements.errorMsg.style.display = "block";
+    }
+
+    function hideError() {
+      elements.errorMsg.textContent = "";
+      elements.errorMsg.style.display = "none";
+    }
+
+    function hideResults() {
+      elements.results.style.display = "none";
+    }
+
+    function resetFeedback() {
+      hideError();
+      hideResults();
+    }
+
+    function sanitizeSearchText(text) {
+      return String(text || "")
+        .replace(/\s+/g, " ")
+        .replace(/[^\S\r\n]+/g, " ")
+        .trim();
+    }
+
+    function setPreviewImage(dataUrl) {
+      elements.previewImg.src = dataUrl;
+      elements.previewImg.style.display = "block";
+      elements.imgOverlay.style.display = "block";
+      elements.changeHint.style.display = "block";
+      elements.uploadPlaceholder.style.display = "none";
+      elements.uploadZone.classList.add("has-image");
+    }
+
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem("price_history");
+        const parsed = JSON.parse(raw || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveHistory(name) {
+      const normalized = sanitizeSearchText(name);
+      if (!normalized) return;
+
+      const history = getHistory().filter((item) => item.name !== normalized);
+      history.unshift({
+        name: normalized,
+        time: Date.now(),
+      });
+
+      localStorage.setItem("price_history", JSON.stringify(history.slice(0, 8)));
+      renderHistory();
+    }
+
+    function getTimeAgo(timestamp) {
+      const minutes = Math.floor((Date.now() - timestamp) / 60000);
+
+      if (minutes < 1) return "только что";
+      if (minutes < 60) return `${minutes} мин`;
+
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} ч`;
+
+      const days = Math.floor(hours / 24);
+      return `${days} д`;
+    }
+
+    function renderHistory() {
+      const history = getHistory();
+
+      if (!history.length) {
+        elements.historySection.style.display = "none";
+        elements.historyList.innerHTML = "";
+        return;
+      }
+
+      elements.historySection.style.display = "block";
+      elements.historyList.innerHTML = "";
+
+      history.forEach((item) => {
+        const el = document.createElement("div");
+        el.className = "history-item";
+        el.innerHTML = `
+          <div class="history-dot"></div>
+          <div class="history-name"></div>
+          <div class="history-time">${getTimeAgo(item.time)}</div>
+        `;
+        el.querySelector(".history-name").textContent = item.name;
+
+        el.addEventListener("click", () => {
+          elements.productInput.value = item.name;
+          resetFeedback();
+          updateButtonState();
+          runSearch();
+        });
+
+        elements.historyList.appendChild(el);
+      });
+    }
+
+    function buildMarketplaceLinks(productName) {
+      const query = encodeURIComponent(productName);
+
+      return {
+        wildberries: `https://www.wildberries.ru/catalog/0/search.aspx?search=${query}`,
+        ozon: `https://www.ozon.ru/search/?text=${query}`,
+      };
+    }
+
+    function showResults(productName) {
+      const safeName = sanitizeSearchText(productName);
+      const links = buildMarketplaceLinks(safeName);
+
+      elements.detectedName.textContent = safeName;
+      elements.wbCard.href = links.wildberries;
+      elements.ozCard.href = links.ozon;
+      elements.results.style.display = "block";
+
+      saveHistory(safeName);
+      elements.results.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleFileChange(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      resetFeedback();
+
+      if (!file.type.startsWith("image/")) {
+        showError("Пожалуйста, выберите изображение.");
+        return;
+      }
+
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        showError("Файл слишком большой. Загрузите изображение до 5 МБ.");
+        return;
+      }
+
+      try {
+        const dataUrl = await readFileAsDataURL(file);
+        const [meta, base64] = String(dataUrl).split(",");
+
+        if (!meta || !base64) {
+          throw new Error("Некорректный формат изображения.");
+        }
+
+        state.imageBase64 = base64;
+        state.imageMimeType = file.type || "image/jpeg";
+
+        setPreviewImage(dataUrl);
+        updateButtonState();
+      } catch (error) {
+        state.imageBase64 = null;
+        state.imageMimeType = null;
+        updateButtonState();
+        showError(error.message || "Не удалось загрузить изображение.");
+      }
+    }
+
+    async function detectProductFromImage() {
+      const response = await fetch("/.netlify/functions/claude-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageBase64: state.imageBase64,
+          imageMimeType: state.imageMimeType,
+        }),
+      });
+
+      let payload = null;
+
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        const errorMessage =
+          payload?.error ||
+          payload?.message ||
+          "Ошибка распознавания изображения.";
+        throw new Error(errorMessage);
+      }
+
+      const detectedName = sanitizeSearchText(
+        payload?.productName ||
+        payload?.text ||
+        payload?.result
+      );
+
+      if (!detectedName) {
+        throw new Error("Не удалось определить товар по фото.");
+      }
+
+      return detectedName;
+    }
+
+    async function runSearch() {
+      const manualName = sanitizeSearchText(elements.productInput.value);
+
+      if (!manualName && !state.imageBase64) {
+        showError("Введите название товара или загрузите фото.");
+        return;
+      }
+
+      resetFeedback();
+      showLoading();
+
+      try {
+        let productName = manualName;
+
+        if (!productName && state.imageBase64) {
+          productName = await detectProductFromImage();
+        }
+
+        if (!productName) {
+          throw new Error("Не удалось получить название товара.");
+        }
+
+        showResults(productName);
+      } catch (error) {
+        showError(error.message || "Произошла ошибка. Попробуйте ещё раз.");
+      } finally {
+        hideLoading();
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.deferredPrompt = event;
+      elements.installBanner.style.display = "flex";
+    });
+
+    elements.installBtn.addEventListener("click", async () => {
+      if (!state.deferredPrompt) return;
+
+      state.deferredPrompt.prompt();
+      await state.deferredPrompt.userChoice;
+      state.deferredPrompt = null;
+      elements.installBanner.style.display = "none";
+    });
+
+    window.addEventListener("appinstalled", () => {
+      state.deferredPrompt = null;
+      elements.installBanner.style.display = "none";
+    });
+
+    elements.fileInput.addEventListener("change", handleFileChange);
+
+    elements.productInput.addEventListener("input", () => {
+      resetFeedback();
+      updateButtonState();
+    });
+
+    elements.productInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !elements.findBtn.disabled) {
+        event.preventDefault();
+        runSearch();
+      }
+    });
+
+    elements.findBtn.addEventListener("click", runSearch);
+
+    renderHistory();
+    updateButtonState();
+  </script>
 </body>
 </html>
