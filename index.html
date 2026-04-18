@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ЦеноМонитор">
+<title>ЦеноМонитор</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f0;
+    --muted: #888;
+    --subtle: #555;
+    --wb: #9951E0;
+    --wb-light: #c48ef5;
+    --oz: #005BFF;
+    --oz-light: #5b9eff;
+    --accent: #e8ff5a;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .app {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: calc(16px + var(--safe-bottom));
+  }
+
+  /* Header */
+  .header {
+    padding: calc(16px + var(--safe-top)) 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .version-badge {
+    font-size: 10px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    background: var(--surface2);
+    color: var(--muted);
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    letter-spacing: 0.5px;
+  }
+
+  /* Main scroll area */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Upload area */
+  .upload-section { margin-bottom: 16px; }
+
+  .upload-zone {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    border: 1.5px dashed var(--border2);
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .upload-zone.has-image { border-style: solid; border-color: var(--border2); }
+  .upload-zone:active { background: var(--surface2); }
+
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer;
+    width: 100%; height: 100%;
+    font-size: 0;
+  }
+
+  #preview-img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+    border-radius: 18px;
+  }
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .cam-icon {
+    width: 56px; height: 56px;
+    background: var(--surface2);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border2);
+  }
+  .upload-label { font-size: 15px; font-weight: 600; color: var(--text); }
+  .upload-sub { font-size: 12px; color: var(--muted); }
+
+  .img-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+    display: none;
+    border-radius: 18px;
+    pointer-events: none;
+  }
+  .img-change-hint {
+    position: absolute;
+    bottom: 14px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    background: rgba(0,0,0,0.5);
+    padding: 5px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+    pointer-events: none;
+    display: none;
+  }
+
+  /* Input section */
+  .input-section { margin-bottom: 16px; }
+  .divider-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-text { font-size: 11px; color: var(--subtle); font-weight: 600; letter-spacing: 0.5px; }
+
+  .text-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: 'Manrope', sans-serif;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .text-input::placeholder { color: var(--subtle); }
+  .text-input:focus { border-color: rgba(255,255,255,0.3); }
+
+  /* CTA Button */
+  .cta-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .cta-btn:not(:disabled) {
+    background: var(--accent);
+    color: #0a0a0a;
+  }
+  .cta-btn:disabled {
+    background: var(--surface2);
+    color: var(--subtle);
+    cursor: not-allowed;
+  }
+  .cta-btn:not(:disabled):active { transform: scale(0.98); }
+
+  /* Loading */
+  .loading-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0;
+    gap: 16px;
+  }
+  .loading-ring {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--muted); font-weight: 500; }
+
+  /* Results */
+  .results-section { display: none; margin-bottom: 16px; }
+
+  .detected-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .detected-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .detected-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .platforms-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .platform-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 14px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .platform-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .platform-card.wb::before { background: var(--wb); }
+  .platform-card.oz::before { background: var(--oz); }
+  .platform-card:active { transform: scale(0.97); background: var(--surface2); }
+
+  .platform-logo-wrap {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wb .platform-logo-wrap { background: rgba(153,81,224,0.15); color: var(--wb-light); }
+  .oz .platform-logo-wrap { background: rgba(0,91,255,0.15); color: var(--oz-light); }
+
+  .platform-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .platform-card-sub {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.3;
+  }
+  .platform-open-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+  }
+  .open-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .wb .open-tag { background: rgba(153,81,224,0.15); color: var(--wb-light); }
+  .oz .open-tag { background: rgba(0,91,255,0.15); color: var(--oz-light); }
+
+  /* Install banner */
+  .install-banner {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .install-icon {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: var(--surface2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .install-text { flex: 1; }
+  .install-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .install-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .install-btn {
+    background: var(--accent);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* History */
+  .history-section { margin-bottom: 16px; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .history-item:active { background: var(--surface2); }
+  .history-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--subtle);
+    flex-shrink: 0;
+  }
+  .history-name { font-size: 13px; color: var(--text); font-weight: 500; flex: 1; }
+  .history-time { font-size: 11px; color: var(--subtle); }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    background: rgba(255,60,60,0.08);
+    border: 1px solid rgba(255,60,60,0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #ff6b6b;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 360px) {
+    .platforms-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      ЦеноМонитор
+    </div>
+    <span class="version-badge">PWA</span>
+  </header>
+
+  <!-- Install banner -->
+  <div class="scroll-area" id="main-scroll">
+    <div class="install-banner" id="install-banner">
+      <div class="install-icon">📲</div>
+      <div class="install-text">
+        <div class="install-title">Установить на экран</div>
+        <div class="install-sub">Работает как приложение</div>
+      </div>
+      <button class="install-btn" id="install-btn">Установить</button>
+    </div>
+
+    <!-- Upload -->
+    <div class="upload-section">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept="image/*" capture="environment">
+        <img id="preview-img" alt="Фото товара">
+        <div class="img-overlay" id="img-overlay"></div>
+        <div class="upload-placeholder" id="upload-placeholder">
+          <div class="cam-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#888">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="upload-label">Сфотографировать товар</div>
+            <div class="upload-sub">или выбрать из галереи</div>
+          </div>
+        </div>
+        <div class="img-change-hint" id="change-hint">Нажмите для замены</div>
+      </div>
+    </div>
+
+    <!-- Text input -->
+    <div class="input-section">
+      <div class="divider-row">
+        <div class="divider-line"></div>
+        <div class="divider-text">или введите название</div>
+        <div class="divider-line"></div>
+      </div>
+      <input class="text-input" type="text" id="product-input"
+        placeholder="Например: Samsung Galaxy S24 128GB"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+
+    <!-- CTA -->
+    <button class="cta-btn" id="find-btn" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Найти лучшую цену
+    </button>
+
+    <!-- Loading -->
+    <div class="loading-state" id="loading">
+      <div class="loading-ring"></div>
+      <div class="loading-text" id="loading-text">Claude распознаёт товар…</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" id="error-msg"></div>
+
+    <!-- Results -->
+    <div class="results-section" id="results">
+      <div class="detected-card">
+        <div class="detected-label">Найденный товар</div>
+        <div class="detected-name" id="detected-name"></div>
+      </div>
+      <div class="platforms-grid">
+        <a class="platform-card wb" id="wb-card" target="_blank" rel="noopener">
+          <div class="platform-logo-wrap">WB</div>
+          <div>
+            <div class="platform-card-name">Wildberries</div>
+            <div class="platform-card-sub">Сортировка по цене ↑</div>
+          </div>
+          <div class="platform-open-row">
+            <span class="open-tag">Открыть</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--wb-light)">
+              <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+            </svg>
+          </div>
+        </a>
+        <a class="platform-card oz" id="oz-card" target="_blank" rel="noopener">
+          <div class="platform-logo-wrap">OZ</div>
+          <div>
+            <div class="platform-card-name">Ozon</div>
+            <div class="platform-card-sub">Сортировка по цене ↑</div>
+          </div>
+          <div class="platform-open-row">
+            <span class="open-tag">Открыть</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--oz-light)">
+              <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+            </svg>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section" id="history-section" style="display:none">
+      <div class="section-title">Недавние поиски</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+const fileInput = document.getElementById('file-input');
+const previewImg = document.getElementById('preview-img');
+const imgOverlay = document.getElementById('img-overlay');
+const uploadPlaceholder = document.getElementById('upload-placeholder');
+const changeHint = document.getElementById('change-hint');
+const productInput = document.getElementById('product-input');
+const findBtn = document.getElementById('find-btn');
+const loadingEl = document.getElementById('loading');
+const loadingText = document.getElementById('loading-text');
+const resultsEl = document.getElementById('results');
+const detectedName = document.getElementById('detected-name');
+const wbCard = document.getElementById('wb-card');
+const ozCard = document.getElementById('oz-card');
+const errorMsg = document.getElementById('error-msg');
+const installBanner = document.getElementById('install-banner');
+const installBtn = document.getElementById('install-btn');
+const historySection = document.getElementById('history-section');
+const historyList = document.getElementById('history-list');
+
+let imageBase64 = null;
+let deferredPrompt = null;
+
+// PWA install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBanner.style.display = 'flex';
+});
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') installBanner.style.display = 'none';
+  deferredPrompt = null;
+});
+window.addEventListener('appinstalled', () => { installBanner.style.display = 'none'; });
+
+// Image upload
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    imageBase64 = data.split(',')[1];
+    previewImg.src = data;
+    previewImg.style.display = 'block';
+    imgOverlay.style.display = 'block';
+    changeHint.style.display = 'block';
+    uploadPlaceholder.style.display = 'none';
+    document.getElementById('upload-zone').classList.add('has-image');
+    updateBtn();
+    hideResults();
+  };
+  reader.readAsDataURL(file);
+});
+
+productInput.addEventListener('input', () => { updateBtn(); hideResults(); });
+
+function updateBtn() {
+  findBtn.disabled = !imageBase64 && productInput.value.trim().length === 0;
+}
+
+function hideResults() {
+  resultsEl.style.display = 'none';
+  errorMsg.style.display = 'none';
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = 'block';
+}
+
+// History
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('price_history') || '[]');
+  } catch { return []; }
+}
+function saveHistory(name) {
+  const h = loadHistory().filter(i => i.name !== name);
+  h.unshift({ name, time: Date.now() });
+  localStorage.setItem('price_history', JSON.stringify(h.slice(0, 8)));
+  renderHistory();
+}
+function renderHistory() {
+  const h = loadHistory();
+  if (h.length === 0) { historySection.style.display = 'none'; return; }
+  historySection.style.display = 'block';
+  historyList.innerHTML = '';
+  h.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    const ago = getAgo(item.time);
+    el.innerHTML = `<div class="history-dot"></div><div class="history-name">${item.name}</div><div class="history-time">${ago}</div>`;
+    el.addEventListener('click', () => {
+      productInput.value = item.name;
+      updateBtn();
+      doSearch(item.name);
+    });
+    historyList.appendChild(el);
+  });
+}
+function getAgo(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'только что';
+  if (m < 60) return m + ' мин';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' ч';
+  return Math.floor(h / 24) + ' д';
+}
+
+renderHistory();
+
+// Search
+findBtn.addEventListener('click', async () => {
+  const manual = productInput.value.trim();
+  if (!imageBase64 && !manual) return;
+
+  findBtn.disabled = true;
+  loadingEl.style.display = 'flex';
+  hideResults();
+
+  const msgs = [
+    'Claude распознаёт товар…',
+    'Анализирую фото…',
+    'Формирую поиск…'
+  ];
+  let mi = 0;
+  const ticker = setInterval(() => {
+    mi = (mi + 1) % msgs.length;
+    loadingText.textContent = msgs[mi];
+  }, 1500);
+
+  try {
+    await doSearch(manual);
+  } finally {
+    clearInterval(ticker);
+    loadingEl.style.display = 'none';
+    findBtn.disabled = false;
+    updateBtn();
+  }
+});
+
+async function doSearch(manual) {
+  loadingEl.style.display = 'flex';
+  hideResults();
+
+  let name = manual;
+
+  if (imageBase64 && !manual) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 }
+            },
+            {
+              type: 'text',
+              text: 'Определи товар на фото. Напиши только поисковый запрос для маркетплейса: бренд + модель + ключевые характеристики. Максимум 8 слов. Только запрос, без пояснений.'
+            }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      loadingEl.style.display = 'none';
+      showError('Ошибка распознавания. Введите название вручную.');
+      return;
+    }
+
+    const data = await res.json();
+    name = data.content?.[0]?.text?.trim() || '';
+    if (!name) {
+      loadingEl.style.display = 'none';
+      showError('Не удалось распознать товар. Попробуйте другое фото.');
+      return;
+    }
+  }
+
+  if (!name) {
+    loadingEl.style.display = 'none';
+    showError('Введите название товара или загрузите фото.');
+    return;
+  }
+
+  const enc = encodeURIComponent(name);
+  const wbUrl = `https://www.wildberries.ru/catalog/0/search.aspx?search=${enc}&sort=priceup`;
+  const ozUrl = `https://www.ozon.ru/search/?text=${enc}&sorting=price`;
+
+  detectedName.textContent = name;
+  wbCard.href = wbUrl;
+  ozCard.href = ozUrl;
+
+  loadingEl.style.display = 'none';
+  resultsEl.style.display = 'block';
+  saveHistory(name);
+
+  resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
